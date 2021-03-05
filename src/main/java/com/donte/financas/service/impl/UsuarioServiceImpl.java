@@ -1,5 +1,6 @@
 package com.donte.financas.service.impl;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -44,6 +45,16 @@ public class UsuarioServiceImpl implements UsuarioService{
 		if(repository.existsByEmail(email)) {
 			throw new RegraNegocioException("Já existe um usuário cadastrado com este e-mail.");
 		}
+	}
+
+	@Override
+	public Optional<Usuario> obterPorId(Long id) {
+		return repository.findById(id);
+	}
+
+	@Override
+	public List<Usuario> obterTodos() {
+		return repository.findAll();
 	}
 
 }

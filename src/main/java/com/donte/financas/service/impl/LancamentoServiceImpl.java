@@ -3,6 +3,7 @@ package com.donte.financas.service.impl;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Example;
@@ -11,9 +12,11 @@ import org.springframework.data.domain.ExampleMatcher.StringMatcher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.donte.financas.api.dto.AtualizarStatusDTO;
 import com.donte.financas.exception.RegraNegocioException;
 import com.donte.financas.model.entity.Lancamento;
 import com.donte.financas.model.enums.StatusLancamento;
+import com.donte.financas.model.enums.TipoLancamento;
 import com.donte.financas.model.repository.LancamentoRepository;
 import com.donte.financas.service.LancamentoService;
 
@@ -57,12 +60,6 @@ public class LancamentoServiceImpl implements LancamentoService{
 	}
 
 	@Override
-	public void atualizarStatus(Lancamento lancamento, StatusLancamento status) {
-		lancamento.setStatus(status);
-		atualizar(lancamento);
-	}
-
-	@Override
 	public void validar(Lancamento lancamento) {
 		if(StringUtils.isBlank(lancamento.getDescricao())) {
 			throw new RegraNegocioException("Informe uma descrição válida");
@@ -72,7 +69,7 @@ public class LancamentoServiceImpl implements LancamentoService{
 			throw new RegraNegocioException("Informe um mês válido");
 		}
 		
-		if(lancamento.getMes() == null || lancamento.getMes().toString().length() != 4) {
+		if(lancamento.getAno() == null || lancamento.getAno().toString().length() != 4) {
 			throw new RegraNegocioException("Informe um ano válido");
 		}
 		
@@ -87,6 +84,40 @@ public class LancamentoServiceImpl implements LancamentoService{
 		if(lancamento.getTipo() == null) {
 			throw new RegraNegocioException("Informe um tipo de lançamento");
 		}
+	}
+
+	@Override
+	public Optional<Lancamento> obterPorId(Long id) {
+		return repository.findById(id);
+	}
+	
+	@Override
+	public void atualizarStatus(Lancamento lancamento, StatusLancamento status) {
+		lancamento.setStatus(status);
+		atualizar(lancamento);
+	}
+
+	
+	@Override
+	public Lancamento atualizarStatus(Long codigo, AtualizarStatusDTO dto) {
+		Lancamento lancamento = repository.findById(codigo).orElseThrow(() -> new RegraNegocioException("Lançamento não encontrado"));
+		StatusLancamento status = StatusLancamento.valueOf(dto.getStatus());
+		lancamento.setStatus(status);
+		return atualizar(lancamento);
+	}
+
+	@Override
+	public BigDecimal obterSaldoPorUsuario(Long id) {
+		BigDecimal receitas = repository.obterTotalPorTipoAndUsuario(TipoLancamento.RECEITA, id);
+		BigDecimal despesas = repository.obterTotalPorTipoAndUsuario(TipoLancamento.DESPESA, id);
+		
+		if(receitas == null)
+			receitas = BigDecimal.ZERO;
+		
+		if(despesas == null)
+			despesas = BigDecimal.ZERO;
+		
+		return receitas.subtract(despesas);
 	}
 
 }
