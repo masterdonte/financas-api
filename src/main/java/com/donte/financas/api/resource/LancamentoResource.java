@@ -56,6 +56,20 @@ public class LancamentoResource {
 		List<Lancamento> lancamentos = service.buscar(lancamentoFiltro);
 		return ResponseEntity.ok(lancamentos);
 	}
+	
+	@GetMapping("{id}")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public ResponseEntity<?> buscarPorId(@PathVariable("id") Long id){
+		return service.obterPorId(id)
+				.map( entity -> new ResponseEntity( converter(entity), HttpStatus.OK ) ) 
+				.orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Lancamento nao encontrado na base de dados"));
+	}
+	
+	@GetMapping("/{id}/temp")
+	public ResponseEntity<?> buscarPeloCodigo(@PathVariable Long id) {
+		Optional<Lancamento> lancamento = service.obterPorId(id);
+		return lancamento.isPresent() ? ResponseEntity.ok(converter(lancamento.get())) : ResponseEntity.notFound().build();
+	}
 
 	@PostMapping
 	public ResponseEntity<?> salvar(@RequestBody LancamentoDTO dto){
@@ -145,6 +159,18 @@ public class LancamentoResource {
 		if(dto.getTipo() != null)
 			lanc.setTipo(TipoLancamento.valueOf(dto.getTipo()));
 		return lanc;
+	}
+	
+	private LancamentoDTO converter(Lancamento lanc) {
+		return LancamentoDTO.builder()
+		.id(lanc.getId())
+		.descricao(lanc.getDescricao())
+		.valor(lanc.getValor())
+		.mes(lanc.getMes())
+		.ano(lanc.getAno())
+		.status(lanc.getStatus().name())
+		.tipo(lanc.getTipo().name())
+		.usuario(lanc.getUsuario().getId()).build();
 	}
 
 }
